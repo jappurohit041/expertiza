@@ -12,54 +12,64 @@ class Assessment360Controller < ApplicationController
   # This data is used to compute the metareview and teammate review scores.
   def all_students_all_reviews
     course = Course.find(params[:course_id])
-    @assignments = course.assignments.reject(&:is_calibrated).reject { |a| a.participants.empty? }
-    @course_participants = course.get_participants
+    # Eager load assignments and their participants to avoid N+1 queries
+    @assignments = course.assignments
+                        .includes(:participants)
+                        .reject(&:is_calibrated)
+                        .reject { |a| a.participants.empty? }
+    
+    # Eager load course participants with their users
+    @course_participants = course.get_participants.includes(:user)
     insure_existence_of(@course_participants, course)
+    
     # hashes for view
     @meta_review = {}
     @teammate_review = {}
     @teamed_count = {}
+    
     # for course
-    # eg. @overall_teammate_review_grades = {assgt_id1: 100, assgt_id2: 178, ...}
-    # @overall_teammate_review_count = {assgt_id1: 1, assgt_id2: 2, ...}
     %w[teammate meta].each do |type|
       instance_variable_set("@overall_#{type}_review_grades", {})
       instance_variable_set("@overall_#{type}_review_count", {})
     end
+    
     @course_participants.each do |cp|
-      # for each assignment
-      # [aggregrate_review_grades_per_stu, review_count_per_stu] --> [0, 0]
       %w[teammate meta].each { |type| instance_variable_set("@#{type}_review_info_per_stu", [0, 0]) }
       students_teamed = StudentTask.teamed_students(cp.user)
       @teamed_count[cp.id] = students_teamed[course.id].try(:size).to_i
+      
       @assignments.each do |assignment|
         @meta_review[cp.id] = {} unless @meta_review.key?(cp.id)
         @teammate_review[cp.id] = {} unless @teammate_review.key?(cp.id)
+        
+        # Find participant without trying to eager load invalid associations
         assignment_participant = assignment.participants.find_by(user_id: cp.user_id)
         next if assignment_participant.nil?
 
+        # Get the reviews using the method calls instead of eager loading
         teammate_reviews = assignment_participant.teammate_reviews
         meta_reviews = assignment_participant.metareviews
+        
         calc_overall_review_info(assignment,
-                                 cp,
-                                 teammate_reviews,
-                                 @teammate_review,
-                                 @overall_teammate_review_grades,
-                                 @overall_teammate_review_count,
-                                 @teammate_review_info_per_stu)
+                                cp,
+                                teammate_reviews,
+                                @teammate_review,
+                                @overall_teammate_review_grades,
+                                @overall_teammate_review_count,
+                                @teammate_review_info_per_stu)
         calc_overall_review_info(assignment,
-                                 cp,
-                                 meta_reviews,
-                                 @meta_review,
-                                 @overall_meta_review_grades,
-                                 @overall_meta_review_count,
-                                 @meta_review_info_per_stu)
+                                cp,
+                                meta_reviews,
+                                @meta_review,
+                                @overall_meta_review_grades,
+                                @overall_meta_review_count,
+                                @meta_review_info_per_stu)
       end
-      # calculate average grade for each student on all assignments in this course
+      
       avg_review_calc_per_student(cp, @teammate_review_info_per_stu, @teammate_review)
       avg_review_calc_per_student(cp, @meta_review_info_per_stu, @meta_review)
     end
-    # avoid divide by zero error
+    
     overall_review_count(@assignments, @overall_teammate_review_count, @overall_meta_review_count)
   end
 
@@ -91,55 +101,68 @@ class Assessment360Controller < ApplicationController
     @assignment_grades = {}
     @peer_review_scores = {}
     @final_grades = {}
+    
     course = Course.find(params[:course_id])
-    @assignments = course.assignments.reject(&:is_calibrated).reject { |a| a.participants.empty? }
+    # Eager load assignments and participants with basic associations
+    @assignments = course.assignments.includes(:participants)
+                        .reject(&:is_calibrated)
+                        .reject { |a| a.participants.empty? }
+    
+    # Load course participants
     @course_participants = course.get_participants
     insure_existence_of(@course_participants, course)
+    
+    # Preload teams for all participants in course
+    teams_cache = {}
+    teams_users = TeamsUser.where(user_id: @course_participants.map(&:user_id))
+                           .includes(:team)
+    
+    teams_users.each do |tu|
+      teams_cache[tu.user_id] = tu.team if tu.team
+    end
+    
     @course_participants.each do |cp|
       @topics[cp.id] = {}
       @assignment_grades[cp.id] = {}
       @peer_review_scores[cp.id] = {}
       @final_grades[cp.id] = 0
+      
       @assignments.each do |assignment|
         user_id = cp.user_id
         assignment_id = assignment.id
-        # break out of the loop if there are no participants in the assignment
-        next if assignment.participants.find_by(user_id: user_id).nil?
-        # break out of the loop if the participant has no team
-        next if TeamsUser.team_id(assignment_id, user_id).nil?
+        
+        # Find participant
+        assignment_participant = assignment.participants.find_by(user_id: user_id)
+        next if assignment_participant.nil?
+        
+        # Get team from cache
+        team = teams_cache[user_id]
+        next if team.nil?
 
-        assignment_participant = Participant.find_by(user_id: user_id, parent_id: assignment_id)
         penalties = calculate_penalty(assignment_participant.id)
-
-        # pull information about the student's grades for particular assignment
-        assignment_grade_summary(cp, assignment_id, penalties)
+        
+        # Get topic, team grade, and calculate final grade
+        topic_id = SignedUpTeam.topic_id(assignment_id, user_id)
+        @topics[cp.id][assignment_id] = SignUpTopic.find_by(id: topic_id)
+        
+        @assignment_grades[cp.id][assignment_id] = if team.grade_for_submission
+                                                   (team.grade_for_submission - penalties[:submission]).round(2)
+                                                 end
+                                                 
+        if @assignment_grades[cp.id][assignment_id]
+          @final_grades[cp.id] += @assignment_grades[cp.id][assignment_id]
+        end
+        
+        # Get peer review score
         peer_review_score = find_peer_review_score(user_id, assignment_id)
-
-        next if peer_review_score.nil? # Skip if there are no peers
-        # Skip if there are no reviews done by peer
-        next if peer_review_score[:review].nil?
-        # Skip if there are no reviews scores assigned by peer
-        next if peer_review_score[:review][:scores].nil?
-        # Skip if there are is no peer review average score
-        next if peer_review_score[:review][:scores][:avg].nil?
+        next if peer_review_score.nil? || 
+                peer_review_score[:review].nil? || 
+                peer_review_score[:review][:scores].nil? || 
+                peer_review_score[:review][:scores][:avg].nil?
 
         @peer_review_scores[cp.id][assignment_id] = peer_review_score[:review][:scores][:avg].round(2)
       end
     end
-  end
-
-  def assignment_grade_summary(cp, assignment_id, penalties)
-    user_id = cp.user_id
-    # topic exists if a team signed up for a topic, which can be found via the user and the assignment
-    topic_id = SignedUpTeam.topic_id(assignment_id, user_id)
-    @topics[cp.id][assignment_id] = SignUpTopic.find_by(id: topic_id)
-    # instructor grade is stored in the team model, which is found by finding the user's team for the assignment
-    team_id = TeamsUser.team_id(assignment_id, user_id)
-    team = Team.find(team_id)
-    @assignment_grades[cp.id][assignment_id] = team[:grade_for_submission] ? (team[:grade_for_submission] - penalties[:submission]).round(2) : nil
-    return if @assignment_grades[cp.id][assignment_id].nil?
-
-    @final_grades[cp.id] += @assignment_grades[cp.id][assignment_id]
   end
 
   def insure_existence_of(course_participants, course)
@@ -185,9 +208,14 @@ class Assessment360Controller < ApplicationController
 
   # The peer review score is taken from the questions for the assignment
   def find_peer_review_score(user_id, assignment_id)
+    # We can't use complex eager loading here due to the non-standard associations
+    # Get the participant first
     participant = AssignmentParticipant.find_by(user_id: user_id, parent_id: assignment_id)
+    return nil unless participant
+    
+    # Get the assignment with questionnaires
     assignment = participant.assignment
-    questions = retrieve_questions assignment.questionnaires, assignment_id
+    questions = retrieve_questions(assignment.questionnaires, assignment_id)
     participant_scores(participant, questions)
   end
 
