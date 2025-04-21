@@ -1,11 +1,30 @@
 <style>
+  /* Styles for the assessment view table */
   th, td {
     text-align: center;
 }
+.table-container {
+  margin: 0 auto;
+  width: 95%;
+}
+.name-column {
+  width: 200px;
+  text-align: left;
+  padding-left: 25px;
+  margin: 0 auto;
+}
+.username-column {
+  width: 120px;
+  text-align: left;
+  padding-left: 25px;
+  margin: 0 auto;
+}
 </style>
+<div class="table-container">
   <table class="table table-striped">
     <tr>
-      <th rowspan=2 width="320">Students</th>
+      <th rowspan=2 class="name-column">Student Name</th>
+      <th rowspan=2 class="username-column">Username</th>
       <th rowspan=2 width="30">Teammate Count</th>
       <% @assignments.each do |assignment| %>
         <th colspan=2 width="300"> <%= assignment.name %> </th>
@@ -21,7 +40,8 @@
 
     <% @course_participants.each do |cp|%>
         <tr>
-            <td align="center"><%= "#{cp.name(session[:ip])} (#{cp.fullname(session[:ip])})" %> </td>
+            <td class="name-column"><%= cp.fullname(session[:ip]) %></td>
+            <td class="username-column"><%= cp.name(session[:ip]) %></td>
             <td><%= @teamed_count[cp.id] %></td>
             <% @assignments.each do |assignment|%>
                 <td><%= @meta_review[cp.id][assignment.id] unless @meta_review.nil? %></td>
@@ -32,7 +52,7 @@
         </tr>
     <%end%>
         <tr>
-            <td><b>Class Average</b></td>
+            <td colspan="2"><b>Class Average</b></td>
             <td></td>
             <% @assignments.each do |assignment|%>
                 <td><%= "#{@overall_meta_review_grades[assignment.id] / @overall_meta_review_count[assignment.id]}%" %></td>
