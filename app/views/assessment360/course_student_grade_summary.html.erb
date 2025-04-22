@@ -36,6 +36,23 @@
     padding-left: 25px;
     margin: 0 auto;
   }
+
+  .column-controls {
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .column-controls label {
+    margin-right: 15px;
+    cursor: pointer;
+  }
+  .hidden-column {
+    display: none !important;
+  }
+  .assignment-header {
+    transition: all 0.3s ease;
+  }
 </style>
 
 <script>
@@ -47,42 +64,107 @@
     });
 </script>
 
+<!-- Add column visibility controls -->
+<div class="column-controls" id="gradeControls">
+  <h4>Show/Hide Columns:</h4>
+  <label>
+    <input type="checkbox" class="column-toggle" data-column="topic" checked> Topic
+  </label>
+  <label>
+    <input type="checkbox" class="column-toggle" data-column="peer-score" checked> Peer Score
+  </label>
+  <label>
+    <input type="checkbox" class="column-toggle" data-column="instructor-grade" checked> Instructor Grade
+  </label>
+</div>
+
 <div class="table-container">
-  <table class="table table-striped sortable">
+  <table class="table table-striped sortable" id="gradesTable">
     <thead>
       <tr>
         <th rowspan=2 class="name-column sorter-true">Student Name</th>
         <th rowspan=2 class="username-column sorter-true">Username</th>
         <% @assignments.each do |assignment| %>
-          <th colspan=3 class="sorter-false"> <%= assignment.name %> </th>
+          <th colspan=3 class="assignment-header sorter-false" data-assignment="<%= assignment.id %>">
+            <%= assignment.name %>
+          </th>
         <% end %>
         <th colspan=2>Final Grades</th>
       </tr>
       <tr>
-        <% (1..@assignments.size).each do %>
-          <th><b>Topic</b></th>
-          <th><b>Peer Score</b></th>
-          <th><b>Instructor Grade</b></th>
-      <% end %>
+        <% @assignments.each do |assignment| %>
+          <th class="topic-column"><b>Topic</b></th>
+          <th class="peer-score-column"><b>Peer Score</b></th>
+          <th class="instructor-grade-column"><b>Instructor Grade</b></th>
+        <% end %>
         <th class="sorter-true"><b>Total Instructor Grade</b></th>
       </tr>
     </thead>
-
-    <% @course_participants.each do |cp|%>
+    <tbody>
+      <% @course_participants.each do |cp| %>
         <tr>
-            <td class="name-column"><%= cp.fullname(session[:ip]) %></td>
-            <td class="username-column"><%= cp.name(session[:ip]) %></td>
-            <% @assignments.each do |assignment|%>
-                <% topic = format_topic(@topics[cp.id][assignment.id]) %>
-                <td title="<%= topic %>" class="topic topic-tooltip">
-                  <%= topic %>
-                </td>
-                <td><%= format_score(@peer_review_scores[cp.id][assignment.id]) %></td>
-                <td><%= format_score(@assignment_grades[cp.id][assignment.id]) %> </td>
-            <% end %>
-
-            <td><%= @final_grades[cp.id] %></td>
+          <td class="name-column"><%= cp.fullname(session[:ip]) %></td>
+          <td class="username-column"><%= cp.name(session[:ip]) %></td>
+          <% @assignments.each do |assignment| %>
+            <td class="topic-column">
+              <% topic = format_topic(@topics[cp.id][assignment.id]) %>
+              <%= topic %>
+            </td>
+            <td class="peer-score-column">
+              <%= format_score(@peer_review_scores[cp.id][assignment.id]) %>
+            </td>
+            <td class="instructor-grade-column">
+              <%= format_score(@assignment_grades[cp.id][assignment.id]) %>
+            </td>
+          <% end %>
+          <td><%= @final_grades[cp.id] %></td>
         </tr>
-    <% end %>
+      <% end %>
+    </tbody>
   </table>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggles = document.querySelectorAll('.column-toggle');
+  
+  function updateColumnSpans() {
+    const topicChecked = document.querySelector('[data-column="topic"]').checked;
+    const peerScoreChecked = document.querySelector('[data-column="peer-score"]').checked;
+    const instructorGradeChecked = document.querySelector('[data-column="instructor-grade"]').checked;
+    
+    // Update all assignment headers
+    document.querySelectorAll('.assignment-header').forEach(header => {
+      let visibleColumns = 0;
+      if (topicChecked) visibleColumns++;
+      if (peerScoreChecked) visibleColumns++;
+      if (instructorGradeChecked) visibleColumns++;
+      header.setAttribute('colspan', visibleColumns || 1);
+      
+      // Hide header if all columns are hidden
+      if (visibleColumns === 0) {
+        header.style.display = 'none';
+      } else {
+        header.style.display = '';
+      }
+    });
+  }
+
+  toggles.forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      const columnType = this.dataset.column;
+      const columns = document.getElementsByClassName(columnType + '-column');
+      
+      Array.from(columns).forEach(column => {
+        if (this.checked) {
+          column.style.display = '';
+        } else {
+          column.style.display = 'none';
+        }
+      });
+      
+      updateColumnSpans();
+    });
+  });
+});
+</script>
