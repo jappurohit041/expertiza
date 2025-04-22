@@ -48,6 +48,20 @@ class Assessment360Controller < ApplicationController
       redirect_back fallback_location: root_path
     end
   end
+  def assignment_grade_summary(cp, assignment_id, penalties)
+    user_id = cp.user_id
+    # topic exists if a team signed up for a topic, which can be found via the user and the assignment
+    topic_id = SignedUpTeam.topic_id(assignment_id, user_id)
+    @topics[cp.id][assignment_id] = SignUpTopic.find_by(id: topic_id)
+    # instructor grade is stored in the team model, which is found by finding the user's team for the assignment
+    team_id = TeamsUser.team_id(assignment_id, user_id)
+    team = Team.find(team_id)
+    @assignment_grades[cp.id][assignment_id] = team[:grade_for_submission] ? (team[:grade_for_submission] - penalties[:submission]).round(2) : nil
+    return if @assignment_grades[cp.id][assignment_id].nil?
+
+    @final_grades[cp.id] += @assignment_grades[cp.id][assignment_id]
+    redirect_to combined_course_summary_assessment360_index_path(course_id: params[:course_id])
+  end
 
   # The function populates the hash value for all students for all the reviews that they have gotten.
   # I.e., Teammate and Meta for each of the assignments that they have taken
@@ -231,7 +245,7 @@ class Assessment360Controller < ApplicationController
     # Calculate overall review counts
     overall_review_count(@assignments, @overall_teammate_review_count, @overall_meta_review_count)
     
-    render 'combined_course_summary'
+    render 'course_summary'
   end
 
   private
