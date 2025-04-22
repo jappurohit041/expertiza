@@ -499,22 +499,30 @@
             
             <!-- Student Overall Scores -->
             <td class="col-meta">
-              <% meta_scores = @assignments.map { |a| @meta_review.dig(cp.id, a.id) }.compact %>
+              <% meta_scores = @assignments.map { |a| @meta_review.dig(cp.id, a.id) }
+                         .compact
+                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
               <%= meta_scores.empty? ? '-' : "#{(meta_scores.sum.to_f / meta_scores.length).round(2)}%" %>
             </td>
             
             <td class="col-teammate">
-              <% teammate_scores = @assignments.map { |a| @teammate_review.dig(cp.id, a.id) }.compact %>
+              <% teammate_scores = @assignments.map { |a| @teammate_review.dig(cp.id, a.id) }
+                         .compact
+                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
               <%= teammate_scores.empty? ? '-' : "#{(teammate_scores.sum.to_f / teammate_scores.length).round(2)}%" %>
             </td>
             
             <td class="col-peer">
-              <% peer_scores = @assignments.map { |a| @peer_review_scores.dig(cp.id, a.id) }.compact %>
+              <% peer_scores = @assignments.map { |a| @peer_review_scores.dig(cp.id, a.id) }
+                         .compact
+                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
               <%= peer_scores.empty? ? '-' : "#{(peer_scores.sum.to_f / peer_scores.length).round(2)}%" %>
             </td>
             
             <td class="col-instructor">
-              <% instructor_grades = @assignments.map { |a| @assignment_grades.dig(cp.id, a.id) }.compact %>
+              <% instructor_grades = @assignments.map { |a| @assignment_grades.dig(cp.id, a.id) }
+                          .compact
+                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
               <%= instructor_grades.empty? ? '-' : "#{(instructor_grades.sum.to_f / instructor_grades.length).round(2)}%" %>
             </td>
             
