@@ -50,24 +50,9 @@ Expertiza::Application.configure do
   # Line 63-69 are for 'bullet' gem initialization.
   config.after_initialize do
     Bullet.enable = true
-    Bullet.alert = true         # Show browser alerts when N+1 queries are detected
-    Bullet.bullet_logger = true  # Log to the Bullet log file (log/bullet.log)
-    Bullet.console = true       # Log to the browser's console.log
-    Bullet.rails_logger = true  # Add warnings to the Rails logger
-    Bullet.add_footer = true    # Add a footer to HTML pages with warnings
-    
-    # Add safelist items for common associations that are handled appropriately
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "Response", association: :scores
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "AssignmentParticipant", association: :team
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "AssignmentParticipant", association: :assignment
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "TeammateReviewResponseMap", association: :reviewee
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "TeammateReviewResponseMap", association: :reviewer
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "MetareviewResponseMap", association: :reviewee
-    Bullet.add_safelist type: :n_plus_one_query, class_name: "MetareviewResponseMap", association: :reviewer
-    
-    # If needed, skip for specific controller actions
-    # Bullet.skip_html_injection = lambda do |controller_name, action_name|
-    #   controller_name == "Assessment360Controller" && action_name == "course_student_grade_summary"
-    # end
+    Bullet.alert = false
+    Bullet.bullet_logger = false
+    Bullet.console = false
+    Bullet.rails_logger = false
   end
 end
