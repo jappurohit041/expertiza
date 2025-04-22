@@ -19,57 +19,130 @@
   padding-left: 25px;
   margin: 0 auto;
 }
+.column-controls {
+  margin: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.column-controls label {
+  margin-right: 15px;
+  cursor: pointer;
+}
+.hidden-column {
+  display: none !important;
+}
+.assignment-header {
+  transition: all 0.3s ease;
+}
 </style>
+
+<!-- Add column visibility controls - removed teammate count checkbox -->
+<div class="column-controls" id="reviewControls">
+  <h4>Show/Hide Columns:</h4>
+  <label>
+    <input type="checkbox" class="column-toggle" data-column="metareview" checked> Metareviews
+  </label>
+  <label>
+    <input type="checkbox" class="column-toggle" data-column="teammate-review" checked> Teammate Reviews
+  </label>
+</div>
+
 <div class="table-container">
-  <table class="table table-striped">
+  <table class="table table-striped" id="reviewsTable">
     <tr>
       <th rowspan=2 class="name-column">Student Name</th>
       <th rowspan=2 class="username-column">Username</th>
       <th rowspan=2 width="30">Teammate Count</th>
       <% @assignments.each do |assignment| %>
-        <th colspan=2 width="300"> <%= assignment.name %> </th>
+        <th colspan=2 class="assignment-header" data-assignment="<%= assignment.id %>"> 
+          <%= assignment.name %> 
+        </th>
       <% end %>
-      <th colspan="2" width="300">Aggregate Score</th>
+      <th colspan=2 class="assignment-header aggregate-header">Aggregate Score</th>
     </tr>
     <tr>
       <% (0..@assignments.size).each do %>
-        <td><b>Metareviews</b></td>
-        <td><b>Teammate Reviews</b></td>
+        <td class="metareview-column"><b>Metareviews</b></td>
+        <td class="teammate-review-column"><b>Teammate Reviews</b></td>
       <% end %>
     </tr>
 
-    <% @course_participants.each do |cp|%>
-        <tr>
-            <td class="name-column"><%= cp.fullname(session[:ip]) %></td>
-            <td class="username-column"><%= cp.name(session[:ip]) %></td>
-            <td><%= @teamed_count[cp.id] %></td>
-            <% @assignments.each do |assignment|%>
-                <td><%= @meta_review[cp.id][assignment.id] unless @meta_review.nil? %></td>
-                <td><%= @teammate_review[cp.id][assignment.id] unless @teammate_review.nil? %></td>
-            <% end%>
-            <td><%= @meta_review[cp.id][:avg_grade_for_assgt] unless @meta_review.nil? || @meta_review[cp.id].nil? %></td>
-            <td><%= @teammate_review[cp.id][:avg_grade_for_assgt] unless @teammate_review.nil? || @teammate_review[cp.id].nil?%></td>
-        </tr>
-    <%end%>
-        <tr>
-            <td colspan="2"><b>Class Average</b></td>
-            <td></td>
-            <% @assignments.each do |assignment|%>
-                <td><%= "#{@overall_meta_review_grades[assignment.id] / @overall_meta_review_count[assignment.id]}%" %></td>
-                <td><%= "#{@overall_teammate_review_grades[assignment.id] / @overall_teammate_review_count[assignment.id]}%" %></td>
-            <% end%>
-            <% total_meta_review_grade = @overall_meta_review_grades.inject(0) {|sum, (k, v)| sum + v } %>
-            <% total_meta_review_count = @overall_meta_review_count.inject(0) {|sum, (k, v)| sum + v } %>
-            <td>
-              <%= total_meta_review_count.zero? ? "N/A" : 
-              "#{total_meta_review_grade / total_meta_review_count}%" %>
-            </td>
-            <% total_teammate_review_grade = @overall_teammate_review_grades.inject(0) {|sum, (k, v)| sum + v } %>
-            <% total_teammate_review_count = @overall_teammate_review_count.inject(0) {|sum, (k, v)| sum + v } %>
-            <td>
-              <%= total_meta_review_count.zero? ? "N/A" : 
-              "#{total_teammate_review_grade / total_teammate_review_count}%" %>    
-            </td>
-        </tr>
-    </table>
+    <% @course_participants.each do |cp| %>
+      <tr>
+        <td class="name-column"><%= cp.fullname(session[:ip]) %></td>
+        <td class="username-column"><%= cp.name(session[:ip]) %></td>
+        <td><%= @teamed_count[cp.id] %></td>
+        <% @assignments.each do |assignment| %>
+          <td class="metareview-column"><%= @meta_review[cp.id][assignment.id] unless @meta_review.nil? %></td>
+          <td class="teammate-review-column"><%= @teammate_review[cp.id][assignment.id] unless @teammate_review.nil? %></td>
+        <% end %>
+        <td class="metareview-column"><%= @meta_review[cp.id][:avg_grade_for_assgt] unless @meta_review.nil? || @meta_review[cp.id].nil? %></td>
+        <td class="teammate-review-column"><%= @teammate_review[cp.id][:avg_grade_for_assgt] unless @teammate_review.nil? || @teammate_review[cp.id].nil? %></td>
+      </tr>
+    <% end %>
+    <tr>
+      <td colspan="2"><b>Class Average</b></td>
+      <td></td>
+      <% @assignments.each do |assignment|%>
+        <td><%= "#{@overall_meta_review_grades[assignment.id] / @overall_meta_review_count[assignment.id]}%" %></td>
+        <td><%= "#{@overall_teammate_review_grades[assignment.id] / @overall_teammate_review_count[assignment.id]}%" %></td>
+      <% end%>
+      <% total_meta_review_grade = @overall_meta_review_grades.inject(0) {|sum, (k, v)| sum + v } %>
+      <% total_meta_review_count = @overall_meta_review_count.inject(0) {|sum, (k, v)| sum + v } %>
+      <td>
+        <%= total_meta_review_count.zero? ? "N/A" : 
+        "#{total_meta_review_grade / total_meta_review_count}%" %>
+      </td>
+      <% total_teammate_review_grade = @overall_teammate_review_grades.inject(0) {|sum, (k, v)| sum + v } %>
+      <% total_teammate_review_count = @overall_teammate_review_count.inject(0) {|sum, (k, v)| sum + v } %>
+      <td>
+        <%= total_meta_review_count.zero? ? "N/A" : 
+        "#{total_teammate_review_grade / total_teammate_review_count}%" %>    
+      </td>
+    </tr>
+  </table>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggles = document.querySelectorAll('.column-toggle');
+  
+  function updateColumnSpans() {
+    const metareviewChecked = document.querySelector('[data-column="metareview"]').checked;
+    const teammateReviewChecked = document.querySelector('[data-column="teammate-review"]').checked;
+    
+    // Update all assignment headers
+    document.querySelectorAll('.assignment-header').forEach(header => {
+      let visibleColumns = 0;
+      if (metareviewChecked) visibleColumns++;
+      if (teammateReviewChecked) visibleColumns++;
+      header.setAttribute('colspan', visibleColumns || 1);
+      
+      // Hide header if both columns are hidden
+      if (visibleColumns === 0) {
+        header.style.display = 'none';
+      } else {
+        header.style.display = '';
+      }
+    });
+  }
+
+  toggles.forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      const columnType = this.dataset.column;
+      const columns = document.getElementsByClassName(columnType + '-column');
+      
+      Array.from(columns).forEach(column => {
+        if (this.checked) {
+          column.style.display = '';
+        } else {
+          column.style.display = 'none';
+        }
+      });
+      
+      updateColumnSpans();
+    });
+  });
+});
+</script>
