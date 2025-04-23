@@ -30,7 +30,7 @@ class Assessment360Controller < ApplicationController
     # check to see if the student has been given a review
     if review_info_per_stu[1] > 0
       temp_avg_grade = review_info_per_stu[0] * 1.0 / review_info_per_stu[1]
-      review[cp.id][:avg_grade_for_assgt] = temp_avg_grade.round.to_s + '%'
+      review[cp.id][:avg_grade_for_assgt] = temp_avg_grade.round.to_s
     end
   end
 
@@ -87,7 +87,7 @@ class Assessment360Controller < ApplicationController
     if reviews.count > 0
       reviews.each { |review| grades += review.average_score.to_i }
       avg_grades = (grades * 1.0 / reviews.count).round
-      hash_per_stu[course_participant.id][assignment.id] = avg_grades.to_s + '%'
+      hash_per_stu[course_participant.id][assignment.id] = avg_grades.to_s
     end
     # Calculate sum of averages to get student's overall grade
     if avg_grades && (grades >= 0)

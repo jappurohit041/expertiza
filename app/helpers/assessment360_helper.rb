@@ -35,9 +35,8 @@ module Assessment360Helper
         end
       end
     end
-    puts "scores: #{scores}"
     return '-' if scores.empty?
-    "#{(scores.sum / scores.size).round(2)}%"
+    "#{(scores.sum / scores.size).round(2)}"
   end
 
   def calculate_average_instructor_grade(assignment)
@@ -101,7 +100,7 @@ module Assessment360Helper
     end
     
     return '-' if scores.empty?
-    "#{(scores.sum / scores.size).round(2)}%"
+    "#{(scores.sum / scores.size).round(2)}"
   end
 
   def calculate_student_peer_average(student)
@@ -119,7 +118,7 @@ module Assessment360Helper
     end
     
     return '-' if scores.empty?
-    "#{(scores.sum / scores.size).round(2)}%"
+    "#{(scores.sum / scores.size).round(2)}"
   end
 
   def safe_score_to_f(score)
