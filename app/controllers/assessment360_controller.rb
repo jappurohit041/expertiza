@@ -46,8 +46,11 @@ class Assessment360Controller < ApplicationController
     if course_participants.empty?
       flash[:error] = "There is no course participant in course #{course.name}"
       redirect_back fallback_location: root_path
+      return true
     end
+    false
   end
+  
   def assignment_grade_summary(cp, assignment_id, penalties)
     user_id = cp.user_id
     # topic exists if a team signed up for a topic, which can be found via the user and the assignment
@@ -209,7 +212,7 @@ class Assessment360Controller < ApplicationController
     
     # Get course participants
     @course_participants = course.get_participants.includes(:user)
-    insure_existence_of(@course_participants, course)
+    return if insure_existence_of(@course_participants, course)
     
     # Initialize hashes for all_students_all_reviews data
     @meta_review = {}
