@@ -434,8 +434,8 @@
           <td colspan="2" class="name-column">Class Average</td>
           <td class="count-column"></td>
           <% @assignments.each do |assignment| %>
-            <td class="col-meta"><%= "#{@overall_meta_review_grades[assignment.id] / @overall_meta_review_count[assignment.id]}%" %></td>
-            <td class="col-teammate"><%= "#{@overall_teammate_review_grades[assignment.id] / @overall_teammate_review_count[assignment.id]}%" %></td>
+            <td class="col-meta"><%= "#{@overall_meta_review_grades[assignment.id] / @overall_meta_review_count[assignment.id]}" %></td>
+            <td class="col-teammate"><%= "#{@overall_teammate_review_grades[assignment.id] / @overall_teammate_review_count[assignment.id]}" %></td>
             <td class="col-topic">-</td>
             <td class="col-peer"><%= calculate_average_peer_score(assignment) %></td>
             <td class="col-instructor"><%= calculate_average_instructor_grade(assignment) %></td>
@@ -445,13 +445,13 @@
           <td class="col-meta">
             <% total_meta = @overall_meta_review_grades.values.sum %>
             <% total_meta_count = @overall_meta_review_count.values.sum %>
-            <%= total_meta_count.zero? ? '-' : "#{(total_meta.to_f / total_meta_count).round(2)}%" %>
+            <%= total_meta_count.zero? ? '-' : "#{(total_meta.to_f / total_meta_count).round(2)}" %>
           </td>
           
           <td class="col-teammate">
             <% total_teammate = @overall_teammate_review_grades.values.sum %>
             <% total_teammate_count = @overall_teammate_review_count.values.sum %>
-            <%= total_teammate_count.zero? ? '-' : "#{(total_teammate.to_f / total_teammate_count).round(2)}%" %>
+            <%= total_teammate_count.zero? ? '-' : "#{(total_teammate.to_f / total_teammate_count).round(2)}" %>
           </td>
           
           <td class="col-peer">
@@ -462,7 +462,7 @@
                 <% peer_scores << score if score && score != 'NaN' && score.to_s != 'NaN' %>
               <% end %>
             <% end %>
-            <%= peer_scores.empty? ? '-' : "#{(peer_scores.sum.to_f / peer_scores.length).round(2)}%" %>
+            <%= peer_scores.empty? ? '-' : "#{(peer_scores.sum.to_f / peer_scores.length).round(2)}" %>
           </td>
           
           <td class="col-instructor">
@@ -473,7 +473,7 @@
                 <% instructor_grades << grade if grade && grade != 'NaN' && grade.to_s != 'NaN' %>
               <% end %>
             <% end %>
-            <%= instructor_grades.empty? ? '-' : "#{(instructor_grades.sum.to_f / instructor_grades.length).round(2)}%" %>
+            <%= instructor_grades.empty? ? '-' : "#{(instructor_grades.sum.to_f / instructor_grades.length).round(2)}" %>
           </td>
           
           <td>
@@ -502,28 +502,28 @@
               <% meta_scores = @assignments.map { |a| @meta_review.dig(cp.id, a.id) }
                          .compact
                          .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
-              <%= meta_scores.empty? ? '-' : "#{(meta_scores.sum.to_f / meta_scores.length).round(2)}%" %>
+              <%= meta_scores.empty? ? '-' : "#{(meta_scores.sum.to_f / meta_scores.length).round(2)}" %>
             </td>
             
             <td class="col-teammate">
               <% teammate_scores = @assignments.map { |a| @teammate_review.dig(cp.id, a.id) }
                          .compact
                          .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
-              <%= teammate_scores.empty? ? '-' : "#{(teammate_scores.sum.to_f / teammate_scores.length).round(2)}%" %>
+              <%= teammate_scores.empty? ? '-' : "#{(teammate_scores.sum.to_f / teammate_scores.length).round(2)}" %>
             </td>
             
             <td class="col-peer">
               <% peer_scores = @assignments.map { |a| @peer_review_scores.dig(cp.id, a.id) }
                          .compact
                          .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
-              <%= peer_scores.empty? ? '-' : "#{(peer_scores.sum.to_f / peer_scores.length).round(2)}%" %>
+              <%= peer_scores.empty? ? '-' : "#{(peer_scores.sum.to_f / peer_scores.length).round(2)}" %>
             </td>
             
             <td class="col-instructor">
               <% instructor_grades = @assignments.map { |a| @assignment_grades.dig(cp.id, a.id) }
                           .compact
                          .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
-              <%= instructor_grades.empty? ? '-' : "#{(instructor_grades.sum.to_f / instructor_grades.length).round(2)}%" %>
+              <%= instructor_grades.empty? ? '-' : "#{(instructor_grades.sum.to_f / instructor_grades.length).round(2)}" %>
             </td>
             
             <td>
