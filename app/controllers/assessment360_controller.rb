@@ -124,83 +124,10 @@ class Assessment360Controller < ApplicationController
   helper_method :format_score
   helper_method :format_topic
 
-  def calculate_final_grade(course_participant)
-    return 0 if @final_grades[course_participant.id].nil?
-    
-    # Calculate weighted average of instructor grades and peer reviews
-    instructor_weight = 0.8  # 80% weight for instructor grades
-    peer_weight = 0.2       # 20% weight for peer reviews
-    
-    instructor_grade = @final_grades[course_participant.id]
-    
-    # Calculate average peer review score across all assignments
-    peer_scores = []
-    @assignments.each do |assignment|
-      score = @peer_review_scores[course_participant.id][assignment.id]
-      peer_scores << score if score
-    end
-    
-    peer_grade = peer_scores.empty? ? 0 : peer_scores.sum / peer_scores.size.to_f
-    
-    # Calculate final weighted grade
-    (instructor_grade * instructor_weight + peer_grade * peer_weight).round(2)
-  end
-
-  def calculate_average_peer_score(assignment)
-    scores = []
-    @course_participants.each do |cp|
-      score = @peer_review_scores[cp.id][assignment.id]
-      scores << score if score
-    end
-    
-    return '-' if scores.empty?
-    (scores.sum / scores.size.to_f).round(2)
-  end
-
-  def calculate_average_instructor_grade(assignment)
-    grades = []
-    @course_participants.each do |cp|
-      grade = @assignment_grades[cp.id][assignment.id]
-      grades << grade if grade
-    end
-    
-    return '-' if grades.empty?
-    (grades.sum / grades.size.to_f).round(2)
-  end
-
-  def calculate_class_average_grade
-    return '-' if @final_grades.empty?
-    
-    total = 0
-    count = 0
-    
-    @final_grades.each do |_, grade|
-      if grade
-        total += grade
-        count += 1
-      end
-    end
-    
-    return 'N/A' if count.zero?
-    (total / count.to_f).round(2)
-  end
-
-  def calculate_class_final_grade
-    total = 0
-    count = 0
-    
-    @course_participants.each do |cp|
-      grade = calculate_final_grade(cp)
-      if grade
-        total += grade
-        count += 1
-      end
-    end
-    
-    return '-' if count.zero?
-    (total / count.to_f).round(2)
-  end
-
+  # This method is used to display the combined course summary for all students and assignments.
+  # It gathers all the necessary data for the course, including assignments, participants, reviews, and grades.
+  # The data is then processed to calculate overall review grades and assignment grades for each participant.
+  # Finally, it renders the 'course_summary' view with the collected data.
   def combined_course_summary
     course = Course.find(params[:course_id])
     
@@ -252,7 +179,7 @@ class Assessment360Controller < ApplicationController
   end
 
   private
-
+  # This method processes the reviews data for a course participant.
   def process_all_reviews_data(cp)
     %w[teammate meta].each { |type| instance_variable_set("@#{type}_review_info_per_stu", [0, 0]) }
     students_teamed = StudentTask.teamed_students(cp.user)
@@ -268,7 +195,7 @@ class Assessment360Controller < ApplicationController
     avg_review_calc_per_student(cp, @teammate_review_info_per_stu, @teammate_review)
     avg_review_calc_per_student(cp, @meta_review_info_per_stu, @meta_review)
   end
-
+  # This method processes the grade summary data for a course participant.
   def process_grade_summary_data(cp, teams_cache)
     @topics[cp.id] = {}
     @assignment_grades[cp.id] = {}
@@ -279,7 +206,7 @@ class Assessment360Controller < ApplicationController
       process_assignment_grades(assignment, cp, teams_cache)
     end
   end
-
+  # This method processes the assignment reviews for a course participant.
   def process_assignment_reviews(assignment, cp)
     assignment_participant = assignment.participants.find_by(user_id: cp.user_id)
     return if assignment_participant.nil?
@@ -303,7 +230,7 @@ class Assessment360Controller < ApplicationController
                             @overall_meta_review_count,
                             @meta_review_info_per_stu)
   end
-
+  # This method processes the assignment grades for a course participant.
   def process_assignment_grades(assignment, cp, teams_cache)
     user_id = cp.user_id
     assignment_id = assignment.id
@@ -326,7 +253,7 @@ class Assessment360Controller < ApplicationController
     if @assignment_grades[cp.id][assignment_id]
       @final_grades[cp.id] += @assignment_grades[cp.id][assignment_id]
     end
-    
+    # Find peer review scores for the assignment
     peer_review_score = find_peer_review_score(user_id, assignment_id)
     return if peer_review_score.nil? || 
               peer_review_score[:review].nil? || 
