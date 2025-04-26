@@ -508,7 +508,8 @@
             <td class="col-teammate">
               <% teammate_scores = @assignments.map { |a| @teammate_review.dig(cp.id, a.id) }
                          .compact
-                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) } %>
+                         .reject { |score| score.blank? || score == 'NaN' || score.to_s == 'NaN' || (score.to_f.nan? rescue true) }
+                         .map{ |x| x.to_f } %>
               <%= teammate_scores.empty? ? '-' : "#{(teammate_scores.sum.to_f / teammate_scores.length).round(2)}" %>
             </td>
             
